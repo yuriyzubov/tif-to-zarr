@@ -7,8 +7,8 @@ This script could be used for conversion of a .tiff file to .zarr format with OM
 4. install python dependencies:
     ``poetry install``
 5. run script using cli:
-    ``poetry run python src/tif_to_zarr.py --src=PATH_TO_SOURCE_DIRECTORY/input_file.n5 --dest=PATH_TO_DEST_DIRECTORY/output_file.zarr``
+    ``poetry run python src/tif_to_zarr.py --src=PATH_TO_SOURCE_DIRECTORY/input_file.tif --dest=PATH_TO_DEST_DIRECTORY/output_file.zarr``
 6. to convert a tiff file to zarr with custom metadata values, you can run smthg similar to this:
-``poetry run python3 src/tif_to_zarr.py --src=/Users/zubovy/crops/crop13_labels_convert.tif  --dest=/Users/zubovy/crops/crop13_labels_convert2.zarr -a x z y -t 1.0 2.0 3.0 -s 4.0 5.0 6.0 -u nanometer nanometer nanometer``
+``poetry run python3 src/tif_to_zarr.py --src=path_to_source_tif  --dest=path_to_output_zarr -a x z y -t 1.0 2.0 3.0 -s 4.0 5.0 6.0 -u nanometer nanometer nanometer``
 7. To get the list of options, you may run this:
 ``poetry run python3 src/tif_to_zarr.py --help``
