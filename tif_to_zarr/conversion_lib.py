@@ -4,6 +4,7 @@ from tifffile import imwrite, TiffFile
 import zarr
 import sys
 import logging
+from numcodecs import Zstd
 
 class Conversion:
     def __init__(self, input_filepath, output_filepath, axes, translation, scale, units):
@@ -32,7 +33,12 @@ class Conversion:
         # create zarr array
         #zarr_data = root.create_dataset('data', shape=tiff_data[0].shape, chunks=chunks, dtype=tiff_data[0].dtype)
         dask_arr = da.from_array(tiff_data[0], chunks=chunks)
-        zarr_data = zarr.create(store=zarr.NestedDirectoryStore(self.output_filepath), path='s0', shape = dask_arr.shape, chunks=chunks, dtype=dask_arr.dtype)
+        zarr_data = zarr.create(store=zarr.NestedDirectoryStore(self.output_filepath),
+                                path='s0',
+                                shape = dask_arr.shape,
+                                chunks=chunks,
+                                dtype=dask_arr.dtype,
+                                compressor=Zstd(level=6))
 
         #store .tiff data in a .zarr file 
         da.store(dask_arr, zarr_data)
