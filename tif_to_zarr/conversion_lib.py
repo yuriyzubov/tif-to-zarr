@@ -1,3 +1,4 @@
+"""This module contains the Conversion class used to convert tiff file to OME-NGFF Zarr (contains chunked array)."""
 import dask.array as da
 import numpy as np
 from tifffile import imwrite, TiffFile
@@ -5,12 +6,31 @@ import zarr
 import sys
 import logging
 from numcodecs import Zstd
+from typing import List
 
 
 class Conversion:
+    """A class used to convert tiff file to zarr array with properly formatted OME-NGFF metadata."""
+    
     def __init__(
-        self, input_filepath, output_filepath, axes, translation, scale, units
+        self,
+        input_filepath : str,
+        output_filepath : str,
+        axes : List[str],
+        translation : List[float],
+        scale : List[float],
+        units : List[str]
     ):
+        """Construct all the necessary attributes for the proper conversion of tiff to OME-NGFF Zarr.
+
+        Args:
+            input_filepath (str): path to source tiff file
+            output_filepath (str): path to the output zarr file.
+            axes (List[str]): list of axes to store in metadata. Order matters.
+            translation (List[float]): list of coordinates where the top left corner of the output zarr array should be located when displayed in neuroglancer. Order matters
+            scale (List[float]): physical size of the voxel (in units). Order matters.
+            units (List[str]): physical dimension units that define in which units the scale attribute is measured. Order matters.
+        """
         self.input_filepath = input_filepath
         self.output_filepath = output_filepath
         self.zarr_metadata = {
@@ -20,8 +40,13 @@ class Conversion:
             "units": units,
         }
 
-    # read tiff file and store array, axes and metadata in a dictionary.
+    
     def read_tiff(self):
+        """Read tiff file and store array, axes and metadata in a dictionary.
+
+        Returns:
+            [numpy.array, [str], dict]: returns tiff image as numpy array object, axis naming and order, and imagej style metadata. 
+        """
         try:
             with TiffFile(self.input_filepath) as tiff:
                 volume_numpy = tiff.asarray()
@@ -35,9 +60,13 @@ class Conversion:
             sys.exit(1)
         return [volume_numpy, axes, imagej_metadata]
 
-    # store numpy array in a zarr file
-    def dask_to_zarray(self, tiff_data, chunks):
+    def dask_to_zarray(self, tiff_data : List, chunks : List):
+        """Store dask array in a zarr file.
 
+        Args:
+            tiff_data (List): a list containing tiff image as numpy array object, axis naming and order, and imagej style metadata. 
+            chunks (List): what chunk size to use for output zarr array
+        """
         # create root group
         root = zarr.group(
             store=zarr.NestedDirectoryStore(self.output_filepath), overwrite=True
@@ -63,6 +92,12 @@ class Conversion:
         )
 
     def numpy_to_zarray(self, tiff_data, chunks):
+        """Store numpy array in a zarr file.
+
+        Args:
+            tiff_data (List): a list containing tiff image as numpy array object, axis naming and order, and imagej style metadata. 
+            chunks (List): what chunk size to use for output zarr array
+        """
         # create root group
         root = zarr.group(
             store=zarr.NestedDirectoryStore(self.output_filepath), overwrite=True
@@ -81,8 +116,15 @@ class Conversion:
             root, tiff_data[1], self.zarr_metadata, zarr_data.name.lstrip("/")
         )
 
-    # add selected tiff metadata to zarr .attrs
     def populate_zarr_attrs(self, root, axes, zarr_metadata, data_address):
+        """Add selected tiff metadata to zarr attributes file (.zattrs).
+
+        Args:
+            root (zarr.Group): root group of the output zarr array
+            axes (List): axes naming order (z,y,x or x,y,z)
+            zarr_metadata (): combined zarr metadata from input translation, scale, axes names and units
+            data_address (str): path to array
+        """
         tiff_axes = [*axes]
 
         # json template for a multiscale structure

@@ -1,3 +1,5 @@
+"""This module contains all necessary code to run tiff to zarr conversion script in a command line interface mode, using Click python library."""
+
 import conversion_lib as conv
 import click
 import numpy as np
@@ -41,6 +43,16 @@ import numpy as np
     help="Metadata unit names. Order matters. \n Example: -t nanometer nanometer nanometer",
 )
 def tif_to_zarr(src, dest, axes, translation, scale, units):
+    """Accept input parameters from click python cli and convert input tiff to ome-ngff zarr.
+
+    Args:
+        src (str): path to source tiff file
+        dest (str): path to the output zarr file.
+        axes (List[str]): list of axes to store in metadata. Order matters.
+        translation (List[float]): list of coordinates where the top left corner of the output zarr array should be located when displayed in neuroglancer. Order matters
+        scale (List[float]): physical size of the voxel (in units). Order matters.
+        units (List[str]): physical dimension units that define in which units the scale attribute is measured. Order matters.
+    """
     # load tiff data
     c = conv.Conversion(src, dest, axes, translation, scale, units)
     tiff_data = c.read_tiff()
