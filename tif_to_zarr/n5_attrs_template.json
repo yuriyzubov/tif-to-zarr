@@ -1,21 +1,9 @@
 {
-    "axes": [
-        "x",
-        "y",
-        "z"
-    ],
-    "multiscales": [
-        {
-            "datasets": [
-
-            ],
-            "name": "em/fibsem-uint8"
-        }
-    ],
-
-"pixelResolution":{"dimensions":[0.0,0.0,0.0],"unit":"nm"},
-"ordering":"C",
-"scales":[],
-"units":["nm","nm","nm"],
-"translate":[0,0,0]
+    "axes": ["x", "y", "z"],
+    "multiscales": [{"datasets": [], "name": "em/fibsem-uint8"}],
+    "pixelResolution": {"dimensions": [0.0, 0.0, 0.0], "unit": "nm"},
+    "ordering": "C",
+    "scales": [],
+    "units": ["nm", "nm", "nm"],
+    "translate": [0, 0, 0]
 }

@@ -1,4 +1,5 @@
 """This module contains the Conversion class used to convert tiff file to OME-NGFF Zarr (contains chunked array)."""
+
 import dask.array as da
 import numpy as np
 from tifffile import imwrite, TiffFile
@@ -11,15 +12,15 @@ from typing import List
 
 class Conversion:
     """A class used to convert tiff file to zarr array with properly formatted OME-NGFF metadata."""
-    
+
     def __init__(
         self,
-        input_filepath : str,
-        output_filepath : str,
-        axes : List[str],
-        translation : List[float],
-        scale : List[float],
-        units : List[str]
+        input_filepath: str,
+        output_filepath: str,
+        axes: List[str],
+        translation: List[float],
+        scale: List[float],
+        units: List[str],
     ):
         """Construct all the necessary attributes for the proper conversion of tiff to OME-NGFF Zarr.
 
@@ -40,12 +41,11 @@ class Conversion:
             "units": units,
         }
 
-    
     def read_tiff(self):
         """Read tiff file and store array, axes and metadata in a dictionary.
 
         Returns:
-            [numpy.array, [str], dict]: returns tiff image as numpy array object, axis naming and order, and imagej style metadata. 
+            [numpy.array, [str], dict]: returns tiff image as numpy array object, axis naming and order, and imagej style metadata.
         """
         try:
             with TiffFile(self.input_filepath) as tiff:
@@ -60,11 +60,11 @@ class Conversion:
             sys.exit(1)
         return [volume_numpy, axes, imagej_metadata]
 
-    def dask_to_zarray(self, tiff_data : List, chunks : List):
+    def dask_to_zarray(self, tiff_data: List, chunks: List):
         """Store dask array in a zarr file.
 
         Args:
-            tiff_data (List): a list containing tiff image as numpy array object, axis naming and order, and imagej style metadata. 
+            tiff_data (List): a list containing tiff image as numpy array object, axis naming and order, and imagej style metadata.
             chunks (List): what chunk size to use for output zarr array
         """
         # create root group
@@ -95,7 +95,7 @@ class Conversion:
         """Store numpy array in a zarr file.
 
         Args:
-            tiff_data (List): a list containing tiff image as numpy array object, axis naming and order, and imagej style metadata. 
+            tiff_data (List): a list containing tiff image as numpy array object, axis naming and order, and imagej style metadata.
             chunks (List): what chunk size to use for output zarr array
         """
         # create root group

@@ -4,13 +4,8 @@
             "version": "",
             "name": "",
             "axes": [],
-            "datasets": [
-               
-            ],
-            "coordinateTransformations": [
-               
-            ]
-            
+            "datasets": [],
+            "coordinateTransformations": []
         }
     ]
 }
