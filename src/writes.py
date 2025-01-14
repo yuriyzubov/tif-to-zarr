@@ -2,7 +2,8 @@ from tifffile import memmap, imread, imwrite
 import numpy as np
 import zarr
 import os
-import multiprocessing as mp
+from dask.distributed import Client, wait
+import time
 
 
 def write_tile_to_zarr(
@@ -32,11 +33,17 @@ def write_tile_to_zarr(
 def write_tiles_strobbing(path_to_stack : str,
                           zarray : zarr.Group,
                            tiles_list : list,
+                           client : Client
                            ):
     chunks_list = np.arange(0, zarray.shape[0], zarray.chunks[0])
     print(chunks_list)
-    cpu_num=mp.cpu_count()
-    with mp.Pool(processes=int(cpu_num * 0.6)) as pool:
-        results = pool.starmap(write_tile_to_zarr, ((chunk_num, path_to_stack, zarray, tiles_list) for chunk_num in chunks_list))
+
+    start = time.time()
+    fut = client.map(lambda v: write_tile_to_zarr(v, path_to_stack, zarray, tiles_list), chunks_list)
+    print(f'Submitted {len(chunks_list)} tasks to the scheduler in {time.time()- start}s')
+    
+    # wait for all the futures to complete
+    result = wait(fut)
+    print(f'Completed {len(chunks_list)} tasks in {time.time() - start}s')
     
     return 0
