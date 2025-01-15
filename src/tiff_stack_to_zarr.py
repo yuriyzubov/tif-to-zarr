@@ -12,15 +12,19 @@ from dask_jobqueue import LSFCluster
 from dask.distributed import Client, LocalCluster
 import multiprocessing as mp
 import time
+from glob import glob
+import dask.array as da
 
 
 @click.command()
-@click.option('--src','-s',type=click.Path(exists = True),help='Input tiff stack directory path.')
+@click.option('--src','-s',type=click.Path(exists = True),help='Input tiff file location, or tiff stack directory path.')
 @click.option('--dest','-s',type=click.STRING,help='Output .zarr file path.')
 @click.option('--num_workers','-w',default=100,type=click.INT,help = "Number of dask workers")
 @click.option('--cluster', '-c', default='' ,type=click.STRING, help="Which instance of dask client to use. Local client - 'local', cluster 'lsf'")
-def cli(src, dest, num_workers, cluster):
+@click.option('--zarr_chunks', '-zc', nargs=3, default=(64, 128, 128), type=click.INT, help='Chunk size for (z, y, x) axis order. z-axis is normal to the tiff stack plane. Default (64, 128, 128)')
+def cli(src, dest, num_workers, cluster, zarr_chunks):
     
+    # create a dask client to submit tasks
     if cluster == '':
         print('Did not specify which instance of the dask client to use!')
         sys.exit(0)
@@ -43,29 +47,43 @@ def cli(src, dest, num_workers, cluster):
     with open(os.path.join(os.getcwd(), "dask_dashboard_link" + ".txt"), "w") as text_file:
         text_file.write(str(client.dashboard_link))
     print(client.dashboard_link)
-
-    path_to_stack = src
-    z_store = zarr.NestedDirectoryStore(dest)
-    tiff_stack = natsorted(os.listdir(path_to_stack))
-
-    probe_image = imread(os.path.join(path_to_stack, tiff_stack[0]))
     
+    if os.path.isdir(src):
+        tiff_type = 'stack'
+    elif src.endswith('.tif') or src.endswith('.tiff'):
+        tiff_type = 'volume' 
+    
+    if tiff_type == 'stack':
+        
+        src_volume = natsorted(glob(os.path.join(src, '*.tif*')))
+        probe_image_store = imread(os.path.join(src, src_volume[0]), aszarr=True)
+        probe_image_arr = da.from_zarr(probe_image_store)
+        
+        tiff_3d_shape = [len(src_volume)] + list(probe_image_arr.shape)
+        tiff_3d_dtype = probe_image_arr.dtype
+        
+    elif tiff_type == 'volume':
+        src_volume = src
+        tiff_3d_store = imread(os.path.join(src), aszarr=True)
+        tiff_volume = da.from_zarr(tiff_3d_store) 
+        print(type(tiff_volume))
+        
+        tiff_3d_shape = tiff_volume.shape
+        tiff_3d_dtype = tiff_volume.dtype
+        
+    z_store = zarr.NestedDirectoryStore(dest)
     z_root = zarr.open(store=z_store, mode = 'a')
-    tiff_arr_shape = [len(tiff_stack)] + list(probe_image.shape)
     z_arr = z_root.require_dataset(name = 's0', 
-                        shape = tiff_arr_shape,  
-                        dtype = probe_image.dtype,
-                        chunks = (13, 128, 128),
+                        shape = tiff_3d_shape,  
+                        dtype = tiff_3d_dtype,
+                        chunks = zarr_chunks,
                         compressor = Zstd(level=6))
         
         
     start_time = time.time()
-    print(z_arr.chunks[0])
-    print(len(tiff_stack))
-    
     
     client.cluster.scale(num_workers)
-    write_tiles_strobbing(path_to_stack, z_arr, tiff_stack, client)
+    write_tiles_strobbing(z_arr, src_volume, client)
     client.cluster.scale(0)
         
     print(time.time() - start_time)
