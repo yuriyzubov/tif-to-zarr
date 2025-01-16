@@ -13,6 +13,7 @@ imagecodecs = "^2024.1.1"
 asciitree = "^0.3.3"
 pyyaml = "^6.0.1"
 black = "^24.10.0"
+dask-jobqueue = "0.8.2"
 
 [tool.poetry.group.dev.dependencies]
 zarr = "^2.16.1"
