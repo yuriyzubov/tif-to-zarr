@@ -44,7 +44,7 @@ from tiff_volume import TiffVolume
     "--units",
     "-u",
     nargs=3,
-    default=("nm", "nm", "nm"),
+    default=("nanometer", "nanometer", "nanometer"),
     type=str,
     help="Metadata unit names. Order matters. \n Example: -t nanometer nanometer nanometer",
 )
@@ -75,10 +75,12 @@ def cli(src, dest, num_workers, cluster, zarr_chunks, axes, translation, scale, 
     print(client.dashboard_link)
     
     if os.path.isdir(src):
-        tiff_volume = TiffStack(src)
+        tiff_volume = TiffStack(src,  axes, scale, translation, units) 
     elif src.endswith('.tif') or src.endswith('.tiff'):
-        tiff_volume = TiffVolume(src) 
+        tiff_volume = TiffVolume(src, axes, scale, translation, units) 
             
+    print(tiff_volume.shape)
+
     z_store = zarr.NestedDirectoryStore(dest)
     z_root = zarr.open(store=z_store, mode = 'a')
     z_arr = z_root.require_dataset(name = 's0', 
@@ -93,5 +95,7 @@ def cli(src, dest, num_workers, cluster, zarr_chunks, axes, translation, scale, 
     tiff_volume.write_to_zarr(z_arr, client)
     client.cluster.scale(0)
     print(time.time() - start_time)
+    #populate zarr metadata
+    tiff_volume.populate_zarr_attrs(z_root)
 if __name__ == '__main__':
     cli()

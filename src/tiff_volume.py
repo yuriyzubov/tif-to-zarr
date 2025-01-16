@@ -10,7 +10,11 @@ import copy
 class TiffVolume():
 
     def __init__(self,
-                src_path: str):
+                src_path: str,
+                axes : list[str],
+                scale : list[float],
+                translation : list[float],
+                units : list[str]):
         """Construct all the necessary attributes for the proper conversion of tiff to OME-NGFF Zarr.
 
         Args:
@@ -24,7 +28,16 @@ class TiffVolume():
         
         self.shape = self.zarr_arr.shape
         self.dtype = self.zarr_arr.dtype
-            
+        
+        #metadata
+        self.zarr_metadata = {
+            "axes": axes,
+            "translation": translation,
+            "scale": scale,
+            "units": units,
+        }
+        
+        
     # multiprocess writing tiff stack into zarr array
     def write_to_zarr(self,
                     zarray : zarr.Group,
@@ -44,6 +57,59 @@ class TiffVolume():
         print(f'Completed {len(chunks_list)} tasks in {time.time() - start}s')
         
         return 0
+    
+    def populate_zarr_attrs(self, root):
+        """Add selected tiff metadata to zarr attributes file (.zattrs).
+
+        Args:
+            root (zarr.Group): root group of the output zarr array
+            zarr_metadata (): combined zarr metadata from input translation, scale, axes names and units
+            data_address (str): path to array
+        """
+        # json template for a multiscale structure
+        multscale_dict = {
+            "multiscales": [
+                {
+                    "axes": [],
+                    "coordinateTransformations": [
+                        {"scale": [1.0, 1.0, 1.0], "type": "scale"}
+                    ],
+                    "datasets": [
+                        {
+                            "coordinateTransformations": [
+                                {"scale": [], "type": "scale"},
+                                {"translation": [], "type": "translation"},
+                            ],
+                            "path": "unknown",
+                        }
+                    ],
+                    "name": ("/" if root.path=="" else root.path),
+                    "version": "0.4",
+                }
+            ]
+        }
+
+        # write metadata info into a multiscale scheme
+        for axis, scale, offset, unit in zip(
+                                            self.zarr_metadata["axes"],
+                                            self.zarr_metadata["scale"],
+                                            self.zarr_metadata["translation"],
+                                            self.zarr_metadata["units"],
+                                            ):
+            multscale_dict["multiscales"][0]["axes"].append(
+                {"name": axis, "type": "space", "unit": unit}
+            )
+            multscale_dict["multiscales"][0]["datasets"][0][
+                "coordinateTransformations"
+            ][0]["scale"].append(scale)
+            multscale_dict["multiscales"][0]["datasets"][0][
+                "coordinateTransformations"
+            ][1]["translation"].append(offset)
+        multscale_dict["multiscales"][0]["datasets"][0]["path"] = list(root.array_keys())[0]
+
+        # add multiscale template to .attrs
+        root.attrs["multiscales"] = multscale_dict["multiscales"]
+    
 
 def write_volume_slab_to_zarr(
                             chunk_num : int,
@@ -65,3 +131,4 @@ def write_volume_slab_to_zarr(
     
     # write a tiff stack slab into zarr array        
     zarray[chunk_num : chunk_num+ zarray.chunks[0], :, :] = np_slab
+    
