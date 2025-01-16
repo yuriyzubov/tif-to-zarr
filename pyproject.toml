@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tif_to_zarr"
-version = "0.5.5"
+version = "0.6.0"
 description = ""
 authors = ["yurii_zubov"]
 license = "BSD 3-Clause License"
