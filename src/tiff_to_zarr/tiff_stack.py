@@ -7,7 +7,7 @@ import time
 import dask.array as da
 from natsort import natsorted
 from glob import glob
-from tiff_volume import TiffVolume
+from tiff_to_zarr.tiff_volume import TiffVolume
 
 
 class TiffStack(TiffVolume):
@@ -72,7 +72,6 @@ class TiffStack(TiffVolume):
     # parallel writing of tiff stack into zarr array
     def write_to_zarr(self, zarray: zarr.Array, client: Client):
         chunks_list = np.arange(0, zarray.shape[0], zarray.chunks[0])
-        print(chunks_list)
 
         start = time.time()
         fut = client.map(

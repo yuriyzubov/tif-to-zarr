@@ -6,11 +6,11 @@ import sys
 from dask_jobqueue import LSFCluster
 from dask.distributed import Client, LocalCluster
 import time
-from tiff_stack import TiffStack
-from tiff_volume import TiffVolume
+from tiff_to_zarr.tiff_stack import TiffStack
+from tiff_to_zarr.tiff_volume import TiffVolume
 
 
-@click.command()
+@click.command("tiff-to-zarr")
 @click.option(
     "--src",
     "-s",
@@ -101,8 +101,6 @@ def cli(src, dest, num_workers, cluster, zarr_chunks, axes, translation, scale, 
     elif src.endswith(".tif") or src.endswith(".tiff"):
         tiff_volume = TiffVolume(src, axes, scale, translation, units)
 
-    print(tiff_volume.shape)
-
     z_store = zarr.NestedDirectoryStore(dest)
     z_root = zarr.open(store=z_store, mode="a")
     z_arr = z_root.require_dataset(
@@ -114,11 +112,9 @@ def cli(src, dest, num_workers, cluster, zarr_chunks, axes, translation, scale, 
     )
 
     # write in parallel to zarr using dask
-    start_time = time.time()
     client.cluster.scale(num_workers)
     tiff_volume.write_to_zarr(z_arr, client)
     client.cluster.scale(0)
-    print(time.time() - start_time)
     # populate zarr metadata
     tiff_volume.populate_zarr_attrs(z_root)
 

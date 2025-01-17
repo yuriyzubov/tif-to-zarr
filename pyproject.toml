@@ -1,6 +1,7 @@
 [tool.poetry]
-name = "tif_to_zarr"
-version = "0.6.0"
+packages = [{include = "tiff_to_zarr", from = "src"}]
+name = "tiff-to-zarr"
+version = "0.6.13"
 description = ""
 authors = ["yurii_zubov"]
 license = "BSD 3-Clause License"
@@ -24,7 +25,7 @@ logging = "^0.4.9.6"
 xarray-multiscale = "^2.1.0"
 
 [tool.poetry.scripts]
-tif_to_zarr = 'tif_to_zarr.tif_to_zarr:tif_to_zarr'
+tiff-to-zarr = 'tiff_to_zarr.tiff_to_zarr:cli'
 
 [build-system]
 requires = ["poetry-core"]

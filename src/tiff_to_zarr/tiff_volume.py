@@ -27,7 +27,6 @@ class TiffVolume:
 
         self.zarr_store = imread(os.path.join(src_path), aszarr=True)
         self.zarr_arr = zarr.open(self.zarr_store)
-        print(type(self.zarr_arr))
 
         self.shape = self.zarr_arr.shape
         self.dtype = self.zarr_arr.dtype
@@ -43,7 +42,6 @@ class TiffVolume:
     # multiprocess writing tiff stack into zarr array
     def write_to_zarr(self, zarray: zarr.Group, client: Client):
         chunks_list = np.arange(0, zarray.shape[0], zarray.chunks[0])
-        print(chunks_list)
 
         src_path = copy.copy(self.src_path)
 
