@@ -68,11 +68,13 @@ class TiffStack(TiffVolume):
 
         # write a tiff stack slab into a zarr array
         zarray[chunk_num : chunk_num + zarray.chunks[0], :, :] = np_slab
-        
-        
+
     def write_tile_slab_to_zarr_fractioned(
-        self, chunk_num: int, zarray: zarr.Array, src_volume: list,
-        slab_layers : int = 1, 
+        self,
+        chunk_num: int,
+        zarray: zarr.Array,
+        src_volume: list,
+        slab_layers: int = 1,
     ):
 
         # check if the slab is at the array boundary or not
@@ -80,20 +82,30 @@ class TiffStack(TiffVolume):
             slab_thickness = zarray.shape[0] - chunk_num
         else:
             slab_thickness = zarray.chunks[0]
-        
-        slab_indices = list(np.arange(chunk_num, chunk_num + slab_thickness, round(slab_thickness / slab_layers)))
-        if slab_indices[-1] < slab_thickness +chunk_num:
-            slab_indices.append(slab_thickness+chunk_num)
-        
+
+        slab_indices = list(
+            np.arange(
+                chunk_num,
+                chunk_num + slab_thickness,
+                round(slab_thickness / slab_layers),
+            )
+        )
+        if slab_indices[-1] < slab_thickness + chunk_num:
+            slab_indices.append(slab_thickness + chunk_num)
+
         for index_pos, slab_index in enumerate(slab_indices):
             if index_pos != 0:
-                subslab_thickness = slab_indices[index_pos] - slab_indices[index_pos - 1]
-                
+                subslab_thickness = (
+                    slab_indices[index_pos] - slab_indices[index_pos - 1]
+                )
+
                 subslab_shape = [subslab_thickness] + list(zarray.shape[-2:])
                 np_slab = np.empty(subslab_shape, zarray.dtype)
 
                 # combine tiles into a layer with thickness equal to (chunk_size in z direction)/(layers_number)
-                for slab_index in np.arange(slab_indices[index_pos - 1], slab_indices[index_pos], 1):
+                for slab_index in np.arange(
+                    slab_indices[index_pos - 1], slab_indices[index_pos], 1
+                ):
                     try:
                         image_tile = imread(src_volume[slab_index])
                     except:
@@ -103,15 +115,19 @@ class TiffStack(TiffVolume):
                     np_slab[slab_index - slab_indices[index_pos - 1], :, :] = image_tile
 
                 # write a tiff stack slab into a zarr array
-                zarray[slab_indices[index_pos - 1] : slab_indices[index_pos], :, :] = np_slab
+                zarray[slab_indices[index_pos - 1] : slab_indices[index_pos], :, :] = (
+                    np_slab
+                )
 
     # parallel writing of tiff stack into zarr array
-    def write_to_zarr(self, zarray: zarr.Array, client: Client, slab_layers : int =1):
+    def write_to_zarr(self, zarray: zarr.Array, client: Client, slab_layers: int = 1):
         chunks_list = np.arange(0, zarray.shape[0], zarray.chunks[0])
         start = time.time()
         fut = client.map(
-            lambda v: self.write_tile_slab_to_zarr_fractioned(v, zarray, self.stack_list, slab_layers),
-            chunks_list
+            lambda v: self.write_tile_slab_to_zarr_fractioned(
+                v, zarray, self.stack_list, slab_layers
+            ),
+            chunks_list,
         )
         print(
             f"Submitted {len(chunks_list)} tasks to the scheduler in {time.time()- start}s"

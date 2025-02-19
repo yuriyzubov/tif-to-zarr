@@ -75,7 +75,18 @@ from tiff_to_zarr.tiff_volume import TiffVolume
     type=str,
     help="Metadata unit names. Order matters. \n Example: -t nanometer nanometer nanometer",
 )
-def cli(src, dest, num_workers, cluster, zarr_chunks, axes, translation, scale, units, slab_layers):
+def cli(
+    src,
+    dest,
+    num_workers,
+    cluster,
+    zarr_chunks,
+    axes,
+    translation,
+    scale,
+    units,
+    slab_layers,
+):
 
     # create a dask client to submit tasks
     if cluster == "":
