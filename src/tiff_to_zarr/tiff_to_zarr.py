@@ -32,9 +32,16 @@ from tiff_to_zarr.tiff_volume import TiffVolume
     "--zarr_chunks",
     "-zc",
     nargs=3,
-    default=(64, 128, 128),
+    default=(14, 128, 128),
     type=click.INT,
     help="Chunk size for (z, y, x) axis order. z-axis is normal to the tiff stack plane. Default (64, 128, 128)",
+)
+@click.option(
+    "--slab_layers",
+    "-sl",
+    default=1,
+    type=click.INT,
+    help="Separation of a slab with thickness=chunk_size(along z axis) into a set of layers, to avoid running out of RAM. Default num_layers=1",
 )
 @click.option(
     "--axes",
@@ -68,7 +75,7 @@ from tiff_to_zarr.tiff_volume import TiffVolume
     type=str,
     help="Metadata unit names. Order matters. \n Example: -t nanometer nanometer nanometer",
 )
-def cli(src, dest, num_workers, cluster, zarr_chunks, axes, translation, scale, units):
+def cli(src, dest, num_workers, cluster, zarr_chunks, axes, translation, scale, units, slab_layers):
 
     # create a dask client to submit tasks
     if cluster == "":
@@ -113,7 +120,7 @@ def cli(src, dest, num_workers, cluster, zarr_chunks, axes, translation, scale, 
 
     # write in parallel to zarr using dask
     client.cluster.scale(num_workers)
-    tiff_volume.write_to_zarr(z_arr, client)
+    tiff_volume.write_to_zarr(z_arr, client, slab_layers)
     client.cluster.scale(0)
     # populate zarr metadata
     tiff_volume.populate_zarr_attrs(z_root)
